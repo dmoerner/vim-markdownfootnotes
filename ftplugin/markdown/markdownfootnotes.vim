@@ -119,11 +119,21 @@ if !hasmapto('<Plug>ReturnFromFootnote', 'n') && mapcheck('<Leader>r', 'n') is# 
     nmap <buffer> <Leader>r <Plug>ReturnFromFootnote
 endif
 
+if !hasmapto('<Plug>EditVimFootnote', 'i') && mapcheck('<Leader>e', 'i') is# ''
+    imap <buffer> <Leader>e <Plug>EditVimFootnote
+endif
+if !hasmapto('<Plug>EditVimFootnote', 'n') && mapcheck('<Leader>e', 'n') is# ''
+    nmap <buffer> <Leader>e <Plug>EditVimFootnote
+endif
+
 nnoremap <buffer> <Plug>AddVimFootnote :<c-u>call markdownfootnotes#VimFootnotes('a')<CR>
 inoremap <buffer> <Plug>AddVimFootnote <C-O>:<c-u>call markdownfootnotes#VimFootnotes('a')<CR>
 
 inoremap <Plug>ReturnFromFootnote <C-O>:<c-u>q<CR><Right>
 nnoremap <Plug>ReturnFromFootnote :<c-u>q<CR><Right>
+
+nnoremap <buffer> <Plug>EditVimFootnote :<c-u>call markdownfootnotes#VimEditFootnote()<CR>
+inoremap <buffer> <Plug>EditVimFootnote <C-O>:<c-u>call markdownfootnotes#VimEditFootnote()<CR>
 
 " :Footnote commands
 command! -buffer -nargs=1 FootnoteNumber call markdownfootnotes#VimFootnoteNumber(<q-args>)

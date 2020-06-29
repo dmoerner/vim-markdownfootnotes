@@ -161,3 +161,26 @@ function! markdownfootnotes#VimFootnotes(appendcmd)
     exe "normal o".cr."[^".g:vimfootnotemark."]: "
     startinsert!
 endfunction
+
+function! markdownfootnotes#VimEditFootnote()
+    " TODO: Do nothing if there are no more footnotes in the document.
+
+    " Define search pattern for footnote definitions
+    let l:footnotepattern = '\[\^\p\+\]'
+    let l:flags = 'cW'
+
+    " Find the next footnote and align it for return
+    let [l:footnoteline, l:footnotepos] = searchpos(l:footnotepattern, l:flags)
+    normal h
+    " Get the next footnote in a variable
+    let l:text = getline(l:footnoteline)
+    let l:footnotenumber = matchstr(l:text, l:footnotepattern)
+
+    " Do the split
+    :below 4split
+
+    " Move to the correct footnote and align at the start
+    let l:temp = search('\V' . l:footnotenumber . ': ', 'W')
+    normal f:2l
+
+endfunction
