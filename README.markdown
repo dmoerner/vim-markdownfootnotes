@@ -1,7 +1,8 @@
 ## VimFootnotes for Markdown
 
-This fork is a slight tweak of the venerable [vimfootnotes][], for use
-with extended markdown, further tweaked by Daniel Moerner.
+This fork is a slight tweak of the venerable vimfootnotes], for use
+with extended markdown, further tweaked by Daniel Moerner. The insert mode 
+mappings are also removed.
 
 The new script inserts footnotes in the widely supported extended markdown
 syntax:
