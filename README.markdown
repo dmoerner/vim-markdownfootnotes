@@ -1,5 +1,8 @@
 ## VimFootnotes for Markdown
 
+EDIT: I now use inline Markdown footnotes and have written another plugin 
+to support this: https://github.com/dmoerner/vim-inlinemarkdownfootnotes
+
 This fork is a slight tweak of the venerable vimfootnotes], for use
 with extended markdown, further tweaked by Daniel Moerner. The insert mode 
 mappings are also removed.
