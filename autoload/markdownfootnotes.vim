@@ -1,186 +1,97 @@
-function! markdownfootnotes#VimFootnoteNumber(newnumber)
-	let g:oldvimfootnotenumber = g:vimfootnotenumber
-	let g:vimfootnotenumber = a:newnumber - 1
-endfunction
+function! markdownfootnotes#GetNextNote()
+	" find the next footnote to insert, don't assume they are in order.
+	let s:cur_pos = getpos(".")
 
-function! markdownfootnotes#VimFootnoteNumberRestore()
-	if exists(g:oldvimfootnotenumber)
-		let g:vimfootnotenumber = g:oldvimfootnotenumber
-	else
-		return 0
-	endif
-endfunction
+	let l:pattern = '\v^\[\^[0-9]+\]:'
+	let l:matchpattern = '\v^\[\^\zs[0-9]+\ze\]:'
+	let l:flags = 'W'
 
-function! markdownfootnotes#VimFootnoteMeta(...)
-	let g:oldvimfootnotetype = g:vimfootnotetype
-	let g:oldvimfootnotenumber = g:vimfootnotenumber
-	if a:0 == "0"
-		if (g:vimfootnotetype == "arabic")
-			let g:vimfootnotetype = "alpha"
-		else
-			let g:vimfootnotetype = "arabic"
-		endif
-	else
-		if (a:1 == g:vimfootnotetype)
-			echomsg "You have chosen the same footnote type! Command won't affect."
-			return 0
-		else
-			let g:vimfootnotetype = a:1
-		endif
-	endif
-	let g:vimfootnotenumber = 0
-endfunction
+	call cursor(1,1)
 
-function! markdownfootnotes#VimFootnoteRestore()
-	if exists("g:oldvimfootnotenumber")
-		let oldvimfootnotetype2 = g:vimfootnotetype
-		let oldvimfootnotenumber2 = g:vimfootnotenumber
-		let g:vimfootnotetype = g:oldvimfootnotetype
-		let g:vimfootnotenumber = g:oldvimfootnotenumber
-		let g:oldvimfootnotetype = oldvimfootnotetype2
-		let g:oldvimfootnotenumber = oldvimfootnotenumber2
-	else
-		echomsg "You didn't change footnote type. Yet."
-		return 0
-	endif
-endfunction
+	let l:count = 0
+	let l:currentnotelist = []
 
-function! markdownfootnotes#VimFootnoteType(footnumber)
-	if (g:vimfootnotetype =~ "alpha\\|Alpha")
-		if (g:vimfootnotetype == "alpha")
-			let upper = "0"
-		else
-			let upper = "-32"
-		endif
-		if (a:footnumber <= 26)
-			let ftnumber = nr2char(a:footnumber+96+upper)
-		elseif (a:footnumber <= 52)
-		   	let ftnumber = nr2char(a:footnumber+70+upper).nr2char(a:footnumber+70+upper)
-		else
-			let g:vimfootnotenumber = 1
-			let ftnumber = nr2char(97+upper)
-		endif
-	elseif (g:vimfootnotetype == "star")
-		let starnumber = 1
-		let ftnumber = ""
-		while (starnumber <= a:footnumber)
-			let ftnumber = ftnumber . '*'
-			let starnumber = starnumber + 1
+	let l:temp = search(l:pattern, l:flags)
+	if (l:temp != 0)
+		" count subsequent matches and build a list
+		while 1
+			" We shouldn't have more than 500 footnotes.
+			if l:temp == 0 || l:count > 500 
+				break
+			endif
+			let l:count += 1
+			let l:currentnote = str2nr(matchstr(getline(l:temp), l:matchpattern))
+			call add(l:currentnotelist, l:currentnote)
+
+			let l:temp = search(l:pattern, l:flags)
 		endwhile
-	elseif (g:vimfootnotetype =~ "roman\\|Roman")
-		let ftnumber = ""
-		let oneroman = ""
-		let counter = g:vimfootnotenumber
-		if (counter >= 50)
-			let ftnumber = "l"
-			let counter = counter - 50
-		endif
-		if (counter > 39 && counter < 50)
-			let ftnumber = "xl"
-			let counter = counter - 40
-		endif
-		if (counter > 10)
-			let tenmodulo = counter % 10
-			let number_roman_ten = (counter - tenmodulo) / 10
-			let romanten = 1
-			while (romanten <= number_roman_ten)
-				let ftnumber = ftnumber.'x'
-				let romanten = romanten + 1
-			endwhile
-		elseif (counter == 10)
-			let ftnumber = ftnumber.'x'
-			let tenmodulo = ""
+
+		" Check if we have the right number of footnotes, or if we don't, insert
+		" at the first possible location.
+		call sort(l:currentnotelist, 'n')
+		if l:count == l:currentnotelist[-1]
+			let l:footnotenumber = l:count + 1
+		elseif l:currentnotelist[0] != 1
+			" Make sure we start as low as we can.
+			let l:footnotenumber = 1
 		else
-			let tenmodulo = counter
+			let l:c = 0
+			while c < len(l:currentnotelist)
+				" Somehow this slice works
+				let [l:prev, l:next] = l:currentnotelist[l:c:l:c + 1]
+				if l:next - l:prev > 1
+					let l:footnotenumber = l:prev + 1
+					break
+				else
+					let l:c += 1
+				endif
+			endwhile
 		endif
-		if (tenmodulo == 1)
-			let oneroman = 'i'
-		elseif (tenmodulo == 2)
-			let oneroman = 'ii'
-		elseif (tenmodulo == 3)
-			let oneroman = 'iii'
-		elseif (tenmodulo == 4)
-			let oneroman = 'iv'
-		elseif (tenmodulo == 5)
-			let oneroman = 'v'
-		elseif (tenmodulo == 6)
-			let oneroman = 'vi'
-		elseif (tenmodulo == 7)
-			let oneroman = 'vii'
-		elseif (tenmodulo == 8)
-			let oneroman = 'viii'
-		elseif (tenmodulo == 9)
-			let oneroman = 'ix'
-		elseif (tenmodulo == 0)
-			let oneroman = ''
-		endif
-		let ftnumber = ftnumber . oneroman
-		if (g:vimfootnotetype == "Roman")
-			let ftnumber = substitute(ftnumber, ".*", "\\U\\0", "g")
-		endif
+
 	else
-		let ftnumber = a:footnumber
+		let l:footnotenumber = 1
 	endif
-	return ftnumber
+
+	call setpos(".", s:cur_pos)
+
+	return l:footnotenumber
 endfunction
 
-function! markdownfootnotes#VimFootnotes(appendcmd)
-    " save current position
-    let s:cur_pos =  getpos(".")
-    " Define search pattern for footnote definitions
-    let l:pattern = '\v^\[\^(.+)\]:'
-    let l:flags = 'eW'
-    call cursor(1,1)
-    " get first match
-    let g:vimfootnotenumber = search(l:pattern, l:flags)
-    if (g:vimfootnotenumber != 0)
-        let l:temp = 1
-        " count subsequent matches
-        while search(l:pattern, l:flags) != 0
-            let l:temp += 1
-            if l:temp > 50
-                redraw | echohl ErrorMsg | echo "Trouble in paradise: the while loop did not work"
-                break
-            endif
-        endwhile
-        let g:vimfootnotenumber = l:temp + 1
-        " Return to position
-        call setpos(".", s:cur_pos)
-        let g:vimfootnotemark = markdownfootnotes#VimFootnoteType(g:vimfootnotenumber)
-    else
-        let g:vimfootnotenumber = 1
-        " Return to position
-        call setpos(".", s:cur_pos)
-        let g:vimfootnotemark = markdownfootnotes#VimFootnoteType(g:vimfootnotenumber)
-    endif
-    let cr = g:vimfootnotelinebreak ? "\<cr>" : ""
+function! markdownfootnotes#VimAddFootnote()
+		let l:footnotenumber = markdownfootnotes#GetNextNote()
+		" Put the footnote after the nearest punctuation.
+		let l:pos = search('[,:.?!]', 'Wce')
 
-    exe "normal ".a:appendcmd."[^".g:vimfootnotemark."]\<esc>"
+    exe "normal a[^".l:footnotenumber."]\<esc>"
     :below 4split
     normal G
-    exe "normal o".cr."[^".g:vimfootnotemark."]: "
+    exe "normal o\<esc>o[^".l:footnotenumber."]: "
     startinsert!
 endfunction
 
 function! markdownfootnotes#VimEditFootnote()
-    " TODO: Do nothing if there are no more footnotes in the document.
-
     " Define search pattern for footnote definitions
-    let l:footnotepattern = '\[\^\p\+\]'
+		let l:footnotepattern = '\v\[\^[0-9]+\]'
     let l:flags = 'cW'
 
     " Find the next footnote and align it for return
     let [l:footnoteline, l:footnotepos] = searchpos(l:footnotepattern, l:flags)
-    normal h
-    " Get the next footnote in a variable
-    let l:text = getline(l:footnoteline)
-    let l:footnotenumber = matchstr(l:text, l:footnotepattern)
 
-    " Do the split
-    :below 4split
+		if l:footnoteline == 0
+			echom "No more footnotes in document."
+			return
+		endif
+
+		" Make sure we aren't aligned inside footnote when we return
+		normal h
+    " Get the next footnote in a variable. Need to move back outside the
+		" footnote to find it.
+    let l:text = getline(l:footnoteline)
+		let [l:footnotenumber, l:startpos, l:endpos] = matchstrpos(l:text, l:footnotepattern, l:footnotepos - 1)
 
     " Move to the correct footnote and align at the start
-    let l:temp = search('\V' . l:footnotenumber . ': ', 'W')
+    :below 4split
+    call search('\V' . l:footnotenumber . ': ', 'W')
     normal f:2l
 
 endfunction
